@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoiVerso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#0B2E24;
+  --river:#12463A;
+  --gold:#F2B705;
+  --toada:#E1552E;
+  --cream:#F7EFDC;
+  --leaf:#3E8E5C;
+  --ink:#0B2E24;
+  --danger:#C0392B;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(242,183,5,0.10), transparent 40%),
+    radial-gradient(circle at 90% 85%, rgba(225,85,46,0.12), transparent 45%),
+    var(--night);
+  color:var(--cream);
+  font-family:'Nunito Sans', sans-serif;
+  padding:0;
+}
+h1,h2,h3,.display{ font-family:'Baloo 2', sans-serif; }
+.wrap{max-width:980px;margin:0 auto;padding:28px 18px 60px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:8px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand .ox{font-size:32px;}
+.brand h1{font-size:22px;margin:0;letter-spacing:0.5px;color:var(--gold);}
+.roomtag{font-size:13px;background:rgba(247,239,220,0.08);border:1px solid rgba(247,239,220,0.18);padding:6px 12px;border-radius:20px;}
+.card{
+  background:rgba(247,239,220,0.05);
+  border:1px solid rgba(247,239,220,0.14);
+  border-radius:18px;
+  padding:26px;
+  margin-bottom:18px;
+}
+.card h2{margin-top:0;color:var(--gold);font-size:20px;}
+.muted{color:rgba(247,239,220,0.65);font-size:14px;line-height:1.5;}
+label{display:block;font-size:13px;margin-bottom:6px;color:rgba(247,239,220,0.8);}
+input[type=text], textarea{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(247,239,220,0.25);
+  background:rgba(0,0,0,0.2);color:var(--cream);font-size:15px;font-family:inherit;
+}
+button{
+  font-family:'Nunito Sans',sans-serif; font-weight:700; cursor:pointer;
+  border:none;border-radius:12px;padding:11px 20px;font-size:14px;
+  background:var(--gold);color:#2A1D02;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+button:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.25);}
+button:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none;}
+button.secondary{background:rgba(247,239,220,0.1);color:var(--cream);border:1px solid rgba(247,239,220,0.25);}
+button.danger{background:var(--danger);color:#fff;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:700px){.grid2{grid-template-columns:1fr;}}
+.teamcard{border-radius:14px;padding:18px;border:2px solid;position:relative;}
+.teamcard.A{border-color:#6FB3E0;}
+.teamcard.B{border-color:#E07B39;}
+.pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-right:6px;background:rgba(255,255,255,0.12);}
+.memberlist{list-style:none;padding:0;margin:10px 0;}
+.memberlist li{padding:5px 0;font-size:14px;border-bottom:1px dashed rgba(247,239,220,0.15);}
+.memberlist li:last-child{border-bottom:none;}
+.pres{color:var(--gold);font-weight:800;}
+.colorswatch{display:inline-block;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);cursor:pointer;margin:4px;vertical-align:middle;}
+.colorswatch.selected{outline:3px solid var(--gold);outline-offset:2px;}
+.colorswatch.disabled{opacity:0.15;cursor:not-allowed;}
+canvas{background:#fff;border-radius:10px;touch-action:none;max-width:100%;}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.tool-btn{padding:8px 12px;background:rgba(247,239,220,0.1);color:var(--cream);border:1px solid rgba(247,239,220,0.25);border-radius:10px;font-size:13px;}
+.tool-btn.active{background:var(--gold);color:#2A1D02;}
+.itemhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:10px;}
+.itemhead h2{margin:0;}
+.timer{font-size:26px;font-weight:800;color:var(--gold);font-family:'Baloo 2';}
+.catbtn{border:2px solid rgba(247,239,220,0.25);background:rgba(247,239,220,0.05);color:var(--cream);border-radius:14px;padding:18px;text-align:left;flex:1;min-width:200px;}
+.catbtn:hover{border-color:var(--gold);}
+.catbtn.taken{opacity:0.35;cursor:not-allowed;}
+.catbtn h3{margin:0 0 6px;color:var(--gold);}
+.chatbox{border:1px solid rgba(247,239,220,0.2);border-radius:12px;padding:10px;height:160px;overflow-y:auto;background:rgba(0,0,0,0.15);font-size:13px;margin-bottom:8px;}
+.chatline b{color:var(--gold);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid rgba(247,239,220,0.15);}
+th{color:var(--gold);font-family:'Baloo 2';font-weight:700;}
+.slideshow{text-align:center;}
+.slideshow img{max-width:100%;max-height:420px;border-radius:12px;background:#fff;}
+.thumbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:12px;}
+.thumb{background:rgba(0,0,0,0.15);border-radius:10px;padding:8px;text-align:center;font-size:12px;}
+.thumb img{width:100%;border-radius:6px;background:#fff;margin-bottom:6px;}
+.winner{font-size:26px;color:var(--gold);font-family:'Baloo 2';text-align:center;margin:14px 0;}
+.hidden{display:none !important;}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(247,239,220,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.justif{background:rgba(0,0,0,0.15);border-radius:10px;padding:10px;margin-top:6px;font-size:13px;text-align:left;}
+.phaseflag{font-size:12px;color:rgba(247,239,220,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="ox" width="42" height="42" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 22c-4 10 1 22 12 24 4 1 7-1 8-4 1 8 4 15 4 15L20 66c-3 2-3 6 0 8l6 4c2 1 5 1 7-1l7-7c3 3 7 5 10 5s7-2 10-5l7 7c2 2 5 2 7 1l6-4c3-2 3-6 0-8l-10-9s3-7 4-15c1 3 4 5 8 4 11-2 16-14 12-24-3-8-11-12-18-8-6 4-8 12-6 18-6-3-13-5-20-5s-14 2-20 5c2-6 0-14-6-18-7-4-15 0-18 8z" fill="var(--gold)"/>
+        <ellipse cx="37" cy="52" rx="6.5" ry="8.5" fill="var(--night)"/>
+        <ellipse cx="63" cy="52" rx="6.5" ry="8.5" fill="var(--night)"/>
+        <ellipse cx="50" cy="66" rx="12" ry="9" fill="var(--night)" opacity="0.15"/>
+        <circle cx="45" cy="70" r="2.5" fill="var(--night)"/>
+        <circle cx="55" cy="70" r="2.5" fill="var(--night)"/>
+        <path d="M43 74c3 2 11 2 14 0" stroke="var(--night)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </svg>
+      <h1>BoiVerso</h1>
+    </div>
+    <div id="roomTagWrap"></div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const CATEGORY_LABELS = {
+  masc: "Itens masculinos e coletivos",
+  fem: "Itens femininos e Auto do Boi",
+  aleg: "Alegorias"
+};
+const ITEMS = [
+  {num:1,cat:'masc',name:'Apresentador',desc:'Fantasia de acordo com o tema proposto pela Comissão de Artes — o item é um apresentador do espetáculo.'},
+  {num:2,cat:'masc',name:'Levantador de Toadas',desc:'Fantasia de acordo com o tema — o item é um intérprete musical.'},
+  {num:3,cat:'masc',name:'Batucada / Marujada',desc:'Fantasia de acordo com o tema — conjunto percussivo que dita o ritmo; deve haver algum instrumento no desenho.'},
+  {num:5,cat:'fem',name:'Porta-Estandarte',desc:'Fantasia de acordo com o tema — dançarina que conduz e defende o símbolo oficial do boi. Se o desenho não apresentar um estandarte, deve ser despontuado.'},
+  {num:6,cat:'masc',name:'Amo do Boi',desc:'Fantasia de acordo com o tema — personagem que representa o dono da fazenda, cantando versos e desafios.'},
+  {num:7,cat:'fem',name:'Sinhazinha da Fazenda',desc:'Fantasia de acordo com o tema — figura de extrema elegância e doçura, com vestido colonial.'},
+  {num:8,cat:'fem',name:'Rainha do Folclore',desc:'Fantasia de acordo com o tema — dançarina que representa a miscigenação e alegria das manifestações folclóricas.'},
+  {num:9,cat:'fem',name:'Cunhã-Poranga',desc:'Fantasia de acordo com o tema — representação da mulher mais bela e guerreira da tribo.'},
+  {num:4,cat:'aleg',name:'Ritual Indígena',desc:'Item alegórico com características indígenas e sobrenaturais.'},
+  {num:11,cat:'masc',name:'Pajé',desc:'Fantasia de acordo com o tema — xamã e líder espiritual, responsável pelos rituais de cura e conexão com a natureza.'},
+  {num:12,cat:'masc',name:'Povos Indígenas',desc:'Fantasia de acordo com o tema — representa as diferentes etnias indígenas da Amazônia.'},
+  {num:13,cat:'aleg',name:'Tuxauas',desc:'Item alegórico — líderes e chefes de tribos indígenas, com indumentárias suntuosas.'},
+  {num:14,cat:'aleg',name:'Figura Típica Regional',desc:'Item alegórico — personagens, ribeirinhos ou lendas típicas da região amazônica.'},
+  {num:16,cat:'aleg',name:'Lenda Amazônica',desc:'Item alegórico — reconstituição cênica de mitos e histórias das tradições amazônicas.'},
+  {num:17,cat:'masc',name:'Vaqueirada',desc:'Fantasia de acordo com o tema — vaqueiro que guarda o boi.'},
+  {num:18,cat:'fem',name:'Pai Francisco e Mãe Catirina',desc:'Fantasia de acordo com o tema — um negro e uma negra grávida que cuidam da fazenda.'}
+];
+const ITEM10 = {num:10,name:'Boi-Bumbá (Evolução)',desc:'A figura central do espetáculo em si.'};
+const ITEM15 = {num:15,name:'Alegorias (Conjunto)',desc:'Julgamento do conjunto das alegorias, composto pelos itens 04, 14 e 16.'};
+const JUDGES = [
+  {name:'Hyldes Kamara', persona:'Você é um jurado gentil e pouco rigoroso. Você valoriza o esforço e a criatividade, é generoso nas notas (raramente abaixo de 6) e escreve justificativas breves e encorajadoras, sempre em português.'},
+  {name:'Lupita Celeste', persona:'Você é um jurado pontual e objetivo. Você avalia estritamente se o desenho atende ao critério técnico descrito, sem floreios, com notas equilibradas e justificativas curtas e diretas, sempre em português.'},
+  {name:'Giane Malu', persona:'Você é um jurado extremamente crítico e rigoroso. Você aponta falhas de composição, fidelidade ao tema e execução, é duro nas notas (não hesita em dar notas baixas) e escreve justificativas mais longas e severas, sempre em português.'}
+];
+const COLOR_OPTIONS = [
+  {name:'Azul', hex:'#2E6DB4'},{name:'Vermelho', hex:'#D64545'},
+  {name:'Verde', hex:'#2E8B57'},{name:'Amarelo', hex:'#F2C14E'},
+  {name:'Roxo', hex:'#8E5FA8'},{name:'Laranja', hex:'#E07B39'},
+  {name:'Rosa', hex:'#E0629B'},{name:'Preto', hex:'#3A3A3A'}
+];
+const DRAW_PALETTE = ['#000000','#FFFFFF','#8B5A2B', ...COLOR_OPTIONS.map(c=>c.hex), '#6EC6FF','#B0BEC5'];
+
+/* ============ STATE / STORAGE HELPERS ============ */
+let myId = 'p_' + Math.random().toString(36).slice(2,10);
+let myName = '';
+let roomCode = null;
+let room = null; // last loaded room object
+let pollTimer = null;
+let currentTool = 'brush';
+let currentColor = '#000000';
+let brushSize = 6;
+let drawing = false;
+let lastPt = null;
+let itemTimerInterval = null;
+let itemTimeLeft = 90;
+let festivalIdx = 0;
+let festivalTimer = null;
+
+// Se o front-end estiver hospedado separadamente do back-end (ex.: Cloudflare Pages
+// chamando uma API no Render), defina window.API_BASE = "https://seu-app.onrender.com"
+// antes deste script, ou edite a linha abaixo. Deixe "" se front e back estiverem juntos.
+const API_BASE = window.API_BASE || '';
+
+async function loadRoom(code){
+  try{
+    const r = await fetch(`${API_BASE}/api/room/${code}`);
+    if(!r.ok) return null;
+    return await r.json();
+  }catch(e){ return null; }
+}
+async function saveRoom(code, data){
+  data.version = (data.version||0)+1;
+  try{
+    await fetch(`${API_BASE}/api/room/${code}`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)
+    });
+  }catch(e){ console.error(e); }
+  room = data;
+}
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c=''; for(let i=0;i<5;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+/* ============ ROOM ACTIONS ============ */
+async function createRoom(name){
+  myName = name;
+  roomCode = genCode();
+  const data = {
+    code: roomCode, version:0,
+    players: { [myId]: {name, teamId:null} },
+    teams: {
+      A: {name:'Agremiação A', colorHex:null, colorName:null, presidentId:null, members:[]},
+      B: {name:'Agremiação B', colorHex:null, colorName:null, presidentId:null, members:[]}
+    },
+    phase: 'lobby',
+    categoryAssignments: {A:{}, B:{}},
+    itemAssignments: {A:{}, B:{}}, // itemNum -> playerId
+    playerProgress: {}, // playerId -> {list:[itemNums in order], idx:0}
+    drawings: {A:{}, B:{}}, // itemNum -> dataURL
+    oxDrawings: {A:null, B:null},
+    chat: {A:[], B:[]},
+    scores: null,
+    scoringInProgress:false,
+    festivalReady: {A:false,B:false}
+  };
+  await saveRoom(roomCode, data);
+  startPolling();
+  render();
+}
+async function joinRoom(code, name){
+  const data = await loadRoom(code);
+  if(!data){ alert('Sala não encontrada. Confira o código.'); return; }
+  myName = name; roomCode = code;
+  if(!data.players[myId]) data.players[myId] = {name, teamId:null};
+  await saveRoom(code, data);
+  startPolling();
+  render();
+}
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async ()=>{
+    const fresh = await loadRoom(roomCode);
+    if(fresh && (!room || fresh.version !== room.version)){
+      room = fresh; render();
+    }
+  }, 2000);
+}
+
+async function joinTeam(teamId){
+  const data = await loadRoom(roomCode);
+  data.players[myId].teamId = teamId;
+  const t = data.teams[teamId];
+  if(!t.members.find(m=>m.id===myId)) t.members.push({id:myId, name:myName});
+  if(!t.presidentId) t.presidentId = myId;
+  await saveRoom(roomCode, data); render();
+}
+async function setTeamIdentity(teamId, name, colorName, colorHex){
+  const data = await loadRoom(roomCode);
+  const rival = teamId==='A' ? 'B' : 'A';
+  if(data.teams[rival].colorHex === colorHex){ alert('A outra agremiação já escolheu essa cor.'); return; }
+  data.teams[teamId].name = name || data.teams[teamId].name;
+  data.teams[teamId].colorName = colorName;
+  data.teams[teamId].colorHex = colorHex;
+  await saveRoom(roomCode, data); render();
+}
+async function startCategoryPhase(){
+  const data = await loadRoom(roomCode);
+  data.phase = 'draw_ox';
+  await saveRoom(roomCode, data); render();
+}
+
+function myTeamId(){ return room && room.players[myId] ? room.players[myId].teamId : null; }
+function isPresident(teamId){ return room.teams[teamId].presidentId === myId; }
+
+async function submitOxDrawing(teamId, dataUrl){
+  const data = await loadRoom(roomCode);
+  data.oxDrawings[teamId] = dataUrl;
+  data.phase = data.oxDrawings.A && data.oxDrawings.B ? 'categories' : data.phase;
+  await saveRoom(roomCode, data); render();
+}
+async function sendChat(teamId, text){
+  const data = await loadRoom(roomCode);
+  data.chat[teamId].push({playerId:myId, name:myName, text, ts:Date.now()});
+  await saveRoom(roomCode, data); render();
+}
+
+async function pickCategory(teamId, cat){
+  const data = await loadRoom(roomCode);
+  const already = Object.values(data.categoryAssignments[teamId]);
+  if(already.includes(cat)) return;
+  data.categoryAssignments[teamId][myId] = cat;
+  const members = data.teams[teamId].members;
+  const chosen = data.categoryAssignments[teamId];
+  if(Object.keys(chosen).length === members.length){
+    buildItemAssignments(data, teamId);
+    data.phase = bothTeamsReadyForDrawing(data) ? 'draw_items' : data.phase;
+  }
+  await saveRoom(roomCode, data); render();
+}
+function bothTeamsReadyForDrawing(data){
+  return Object.keys(data.playerProgress).length>0 &&
+    ['A','B'].every(t=>data.teams[t].members.every(m=>data.playerProgress[m.id]));
+}
+function buildItemAssignments(data, teamId){
+  const members = data.teams[teamId].members;
+  const chosen = data.categoryAssignments[teamId];
+  if(members.length===1){
+    const list = ITEMS.map(i=>i.num);
+    data.playerProgress[members[0].id] = {list, idx:0};
+    ITEMS.forEach(i=>data.itemAssignments[teamId][i.num]=members[0].id);
+    return;
+  }
+  const chosenCats = new Set(Object.values(chosen));
+  const allCats = ['masc','fem','aleg'];
+  const leftover = allCats.filter(c=>!chosenCats.has(c));
+  // assign directly chosen categories
+  const progress = {}; members.forEach(m=>progress[m.id]={list:[], idx:0});
+  ITEMS.forEach(item=>{
+    const owner = Object.entries(chosen).find(([pid,c])=>c===item.cat);
+    if(owner){ progress[owner[0]].list.push(item.num); data.itemAssignments[teamId][item.num]=owner[0]; }
+  });
+  // leftover categories' items split randomly & evenly among all members
+  let leftoverItems = ITEMS.filter(i=>leftover.includes(i.cat)).map(i=>i.num);
+  leftoverItems.sort(()=>Math.random()-0.5);
+  let mi=0;
+  leftoverItems.forEach(num=>{
+    const pid = members[mi % members.length].id;
+    progress[pid].list.push(num);
+    data.itemAssignments[teamId][num]=pid;
+    mi++;
+  });
+  Object.entries(progress).forEach(([pid,p])=>{
+    p.list.sort((a,b)=>a-b);
+    data.playerProgress[pid]=p;
+  });
+}
+
+async function submitItemDrawing(itemNum, dataUrl){
+  const data = await loadRoom(roomCode);
+  const t = myTeamId();
+  data.drawings[t][itemNum] = dataUrl;
+  const prog = data.playerProgress[myId];
+  prog.idx += 1;
+  // check if both teams fully done
+  const allDone = ['A','B'].every(team=>{
+    return data.teams[team].members.every(m=>{
+      const pp = data.playerProgress[m.id];
+      return pp && pp.idx >= pp.list.length;
+    });
+  });
+  if(allDone) data.phase = 'festival';
+  await saveRoom(roomCode, data); render();
+}
+
+async function markFestivalReady(teamId){
+  const data = await loadRoom(roomCode);
+  data.festivalReady[teamId]=true;
+  if(data.festivalReady.A && data.festivalReady.B) data.phase='judging';
+  await saveRoom(roomCode, data); render();
+}
+
+/* ============ AI JUDGING ============ */
+async function runJudging(){
+  const data = await loadRoom(roomCode);
+  if(data.scoringInProgress || data.scores) { room=data; render(); return; }
+  data.scoringInProgress = true;
+  await saveRoom(roomCode, data); render();
+
+  const results = {A:{}, B:{}};
+  for(const teamId of ['A','B']){
+    for(const judge of JUDGES){
+      const content = [];
+      content.push({type:'text', text: judge.persona + "\n\nVocê vai avaliar os desenhos de fantasias/itens de uma agremiação de boi-bumbá (estilo Festival de Parintins). Para cada item, dê uma nota de 0 a 10 (pode usar casas decimais) e uma justificativa curta em português (1-2 frases). Responda APENAS com um JSON válido, um array de objetos no formato: [{\"item\":NUM, \"score\":NUM, \"justificativa\":\"...\"}], sem nenhum texto antes ou depois, sem markdown."});
+      ITEMS.forEach(item=>{
+        const d = data.drawings[teamId][item.num];
+        if(d){
+          content.push({type:'text', text: `Item ${item.num} — ${item.name}. Critério: ${item.desc}`});
+          content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data: d.split(',')[1]}});
+        }
+      });
+      // Item 15 ensemble: items 4,14,16
+      content.push({type:'text', text:`Item 15 — ${ITEM15.name}. Critério: ${ITEM15.desc} Avalie o conjunto formado pelas três imagens de alegorias a seguir (itens 04, 14 e 16 já mostrados acima, considere-os em conjunto).`});
+      [4,14,16].forEach(n=>{
+        const d = data.drawings[teamId][n];
+        if(d) content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d.split(',')[1]}});
+      });
+      try{
+        const resp = await fetch(`${API_BASE}/api/judge`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({content})
+        });
+        const json = await resp.json();
+        let text = (json.content||[]).map(b=>b.text||'').join('');
+        text = text.replace(/```json|```/g,'').trim();
+        const parsed = JSON.parse(text);
+        parsed.forEach(entry=>{
+          if(!results[teamId][entry.item]) results[teamId][entry.item] = [];
+          results[teamId][entry.item].push({judge:judge.name, score:Number(entry.score), justificativa:entry.justificativa});
+        });
+      }catch(e){
+        console.error('Erro ao julgar', teamId, judge.name, e);
+      }
+    }
+  }
+  const fresh = await loadRoom(roomCode);
+  fresh.scores = results;
+  fresh.scoringInProgress = false;
+  fresh.phase = 'results';
+  await saveRoom(roomCode, fresh); render();
+}
+
+function computeItemTotal(scoresArr){
+  if(!scoresArr || scoresArr.length===0) return {total:0, discarded:null};
+  const sorted = [...scoresArr].sort((a,b)=>a.score-b.score);
+  const discarded = sorted[0];
+  const kept = sorted.slice(1);
+  return {total: kept.reduce((s,x)=>s+x.score,0), discarded};
+}
+function teamGrandTotal(teamId){
+  if(!room.scores) return 0;
+  let total=0;
+  Object.keys(room.scores[teamId]).forEach(itemNum=>{
+    total += computeItemTotal(room.scores[teamId][itemNum]).total;
+  });
+  return Math.round(total*100)/100;
+}
+
+/* ============ CANVAS DRAWING ============ */
+function setupCanvas(canvas){
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  let shapeStart=null; let snapshot=null;
+
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches? e.touches[0].clientY : e.clientY) - rect.top;
+    return {x: cx*(canvas.width/rect.width), y: cy*(canvas.height/rect.height)};
+  }
+  function floodFill(x,y,fillColor){
+    x=Math.floor(x); y=Math.floor(y);
+    const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const d = img.data;
+    const idx = (y*canvas.width+x)*4;
+    const target = [d[idx],d[idx+1],d[idx+2],d[idx+3]];
+    const fr = parseInt(fillColor.slice(1,3),16), fg=parseInt(fillColor.slice(3,5),16), fb=parseInt(fillColor.slice(5,7),16);
+    if(target[0]===fr && target[1]===fg && target[2]===fb) return;
+    const stack=[[x,y]]; let guard=0;
+    function match(i){ return Math.abs(d[i]-target[0])<20 && Math.abs(d[i+1]-target[1])<20 && Math.abs(d[i+2]-target[2])<20; }
+    while(stack.length && guard<400000){
+      guard++;
+      const [cx,cy]=stack.pop();
+      if(cx<0||cy<0||cx>=canvas.width||cy>=canvas.height) continue;
+      const i=(cy*canvas.width+cx)*4;
+      if(!match(i)) continue;
+      d[i]=fr; d[i+1]=fg; d[i+2]=fb; d[i+3]=255;
+      stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+    }
+    ctx.putImageData(img,0,0);
+  }
+  function start(e){
+    e.preventDefault(); drawing=true;
+    const p = getPos(e);
+    if(currentTool==='bucket'){ floodFill(p.x,p.y,currentColor); drawing=false; return; }
+    if(currentTool==='rect' || currentTool==='circle'){
+      shapeStart=p; snapshot = ctx.getImageData(0,0,canvas.width,canvas.height); return;
+    }
+    lastPt=p;
+    ctx.beginPath(); ctx.moveTo(p.x,p.y);
+  }
+  function move(e){
+    if(!drawing) return; e.preventDefault();
+    const p = getPos(e);
+    if(currentTool==='rect' || currentTool==='circle'){
+      ctx.putImageData(snapshot,0,0);
+      ctx.strokeStyle=currentColor; ctx.lineWidth=brushSize;
+      ctx.beginPath();
+      if(currentTool==='rect'){ ctx.rect(shapeStart.x, shapeStart.y, p.x-shapeStart.x, p.y-shapeStart.y); }
+      else{ const r=Math.hypot(p.x-shapeStart.x,p.y-shapeStart.y); ctx.arc(shapeStart.x,shapeStart.y,r,0,Math.PI*2); }
+      ctx.stroke();
+      return;
+    }
+    ctx.strokeStyle = currentTool==='eraser' ? '#FFFFFF' : currentColor;
+    ctx.lineWidth = currentTool==='eraser' ? brushSize*3 : brushSize;
+    ctx.lineTo(p.x,p.y); ctx.stroke();
+    lastPt=p;
+  }
+  function end(e){ drawing=false; shapeStart=null; }
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('mousemove', move); canvas.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
+  return ctx;
+}
+
+/* ============ TIMER ============ */
+function startItemTimer(onExpire){
+  clearInterval(itemTimerInterval);
+  itemTimeLeft = 90;
+  itemTimerInterval = setInterval(()=>{
+    itemTimeLeft--;
+    const el = document.getElementById('timerDisplay');
+    if(el) el.textContent = fmtTime(itemTimeLeft);
+    if(itemTimeLeft<=0){ clearInterval(itemTimerInterval); onExpire(); }
+  },1000);
+}
+function fmtTime(s){ const m=Math.floor(s/60); const r=s%60; return m+':'+String(r).padStart(2,'0'); }
+
+/* ============ RENDER ============ */
+function el(html){ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render(){
+  const app = document.getElementById('app');
+  const roomTagWrap = document.getElementById('roomTagWrap');
+  roomTagWrap.innerHTML = roomCode ? `<span class="roomtag">Sala: <b>${roomCode}</b></span>` : '';
+  if(!roomCode || !room){ app.innerHTML=''; app.appendChild(renderEntry()); return; }
+
+  clearInterval(itemTimerInterval); // reset visual timer handling per render unless in draw_items with same item
+
+  let node;
+  switch(room.phase){
+    case 'lobby': node = renderLobby(); break;
+    case 'draw_ox': node = renderDrawOx(); break;
+    case 'categories': node = renderCategories(); break;
+    case 'draw_items': node = renderDrawItems(); break;
+    case 'festival': node = renderFestival(); break;
+    case 'judging': node = renderJudging(); break;
+    case 'results': node = renderResults(); break;
+    default: node = el('<div>Fase desconhecida.</div>');
+  }
+  app.innerHTML=''; app.appendChild(node);
+}
+
+function renderEntry(){
+  const c = el(`<div class="card">
+    <h2>Entrar no Festival</h2>
+    <p class="muted">Crie uma sala para uma agremiação disputar o Festival do Boi, ou entre em uma sala existente com o código compartilhado.</p>
+    <label>Seu nome</label>
+    <input type="text" id="nameInput" placeholder="Digite seu nome" />
+    <div class="row" style="margin-top:14px;">
+      <button id="btnCreate">Criar sala</button>
+    </div>
+    <hr style="border-color:rgba(247,239,220,0.15);margin:20px 0;">
+    <label>Código da sala</label>
+    <input type="text" id="codeInput" placeholder="Ex: A1B2C" style="text-transform:uppercase" />
+    <div class="row" style="margin-top:14px;">
+      <button class="secondary" id="btnJoin">Entrar na sala</button>
+    </div>
+  </div>`);
+  c.querySelector('#btnCreate').onclick = ()=>{
+    const n = c.querySelector('#nameInput').value.trim();
+    if(!n){ alert('Digite seu nome.'); return; }
+    createRoom(n);
+  };
+  c.querySelector('#btnJoin').onclick = ()=>{
+    const n = c.querySelector('#nameInput').value.trim();
+    const code = c.querySelector('#codeInput').value.trim().toUpperCase();
+    if(!n || !code){ alert('Preencha nome e código.'); return; }
+    joinRoom(code, n);
+  };
+  return c;
+}
+
+function renderLobby(){
+  const wrap = el('<div></div>');
+  wrap.appendChild(el(`<div class="card"><h2>Lobby</h2><p class="muted">Compartilhe o código <b>${roomCode}</b> com os outros players. Escolha uma agremiação para entrar.</p></div>`));
+  const grid = el('<div class="grid2"></div>');
+  ['A','B'].forEach(tid=>{
+    const t = room.teams[tid];
+    const isMine = myTeamId()===tid;
+    const membersHtml = t.members.map(m=>`<li>${m.id===t.presidentId?'<span class="pres">👑 ':''}${esc(m.name)}${m.id===t.presidentId?' (Presidente)</span>':''}</li>`).join('') || '<li class="muted">Ninguém ainda</li>';
+    const card = el(`<div class="teamcard ${tid}">
+      <div class="pill">${tid}</div><b>${esc(t.name)}</b>
+      ${t.colorHex? `<span class="colorswatch selected" style="background:${t.colorHex}"></span> <span class="muted">${t.colorName} e Branco</span>`:'<div class="muted" style="margin-top:6px;">Cores ainda não definidas</div>'}
+      <ul class="memberlist">${membersHtml}</ul>
+      <div class="muted">${t.members.length}/3 participantes</div>
+    </div>`);
+    if(!isMine && !myTeamId() && t.members.length<3){
+      const btn = el(`<button class="secondary" style="margin-top:10px;">Entrar nesta agremiação</button>`);
+      btn.onclick=()=>joinTeam(tid);
+      card.appendChild(btn);
+    }
+    if(isMine && myId===t.presidentId){
+      const form = el(`<div style="margin-top:12px;">
+        <label>Nome da agremiação</label>
+        <input type="text" id="tname_${tid}" value="${esc(t.name)}" />
+        <label style="margin-top:8px;">Cor da agremiação (sempre com branco)</label>
+        <div id="swatches_${tid}"></div>
+        <button class="secondary" style="margin-top:8px;" id="saveIdentity_${tid}">Salvar identidade</button>
+      </div>`);
+      const sw = form.querySelector(`#swatches_${tid}`);
+      COLOR_OPTIONS.forEach(c=>{
+        const rivalId = tid==='A'?'B':'A';
+        const takenByRival = room.teams[rivalId].colorHex===c.hex;
+        const s = el(`<span class="colorswatch ${t.colorHex===c.hex?'selected':''} ${takenByRival?'disabled':''}" style="background:${c.hex}" title="${c.name}"></span>`);
+        if(!takenByRival) s.onclick=()=>{ selectedColor_[tid]=c; renderSwatchSelection(sw, c.hex); };
+        sw.appendChild(s);
+      });
+      form.querySelector(`#saveIdentity_${tid}`).onclick=()=>{
+        const nm = form.querySelector(`#tname_${tid}`).value.trim();
+        const chosen = selectedColor_[tid];
+        if(!chosen){ alert('Escolha uma cor.'); return; }
+        setTeamIdentity(tid, nm, chosen.name, chosen.hex);
+      };
+      card.appendChild(form);
+    }
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+  const bothColors = room.teams.A.colorHex && room.teams.B.colorHex && room.teams.A.colorHex!==room.teams.B.colorHex;
+  const teamsEqual = room.teams.A.members.length===room.teams.B.members.length && room.teams.A.members.length>0;
+  const canStart = bothColors && teamsEqual;
+  const startBtn = el(`<button style="margin-top:14px;" ${canStart?'':'disabled'}>Começar partida</button>`);
+  startBtn.onclick = startCategoryPhase;
+  wrap.appendChild(startBtn);
+  if(!teamsEqual) wrap.appendChild(el(`<p class="muted">As duas agremiações precisam ter o mesmo número de participantes (1-1, 2-2 ou 3-3).</p>`));
+  if(teamsEqual && !bothColors) wrap.appendChild(el(`<p class="muted">Os presidentes precisam definir cores diferentes para as agremiações.</p>`));
+  return wrap;
+}
+const selectedColor_ = {A:null,B:null};
+function renderSwatchSelection(container, hex){
+  [...container.children].forEach(s=>{ s.classList.toggle('selected', s.style.background===hexToRgbCss(hex)); });
+}
+function hexToRgbCss(hex){
+  const d=document.createElement('div'); d.style.background=hex; document.body.appendChild(d);
+  const c = getComputedStyle(d).backgroundColor; document.body.removeChild(d); return c;
+}
+
+function renderDrawOx(){
+  const tid = myTeamId();
+  if(!tid) return el('<div class="card">Você não está em uma agremiação.</div>');
+  const t = room.teams[tid];
+  const amPresident = isPresident(tid);
+  const wrap = el('<div></div>');
+  wrap.appendChild(el(`<div class="card">
+    <div class="phaseflag">Desenho especial</div>
+    <div class="itemhead"><h2>Item ${ITEM10.num} — ${esc(ITEM10.name)}</h2></div>
+    <p class="muted">${ITEM10.desc} Este desenho será exibido na apuração, mas não é julgado. ${amPresident? 'Você é o Presidente: desenhe o boi enquanto os demais ajudam pelo chat.' : 'Aguarde o Presidente desenhar; ajude pelo chat!'}</p>
+  </div>`));
+
+  const dcard = el('<div class="card"></div>');
+  if(amPresident && !room.oxDrawings[tid]){
+    dcard.appendChild(renderCanvasTool(480,360,(dataUrl)=>submitOxDrawing(tid, dataUrl), 'Enviar desenho do Boi'));
+  } else if(room.oxDrawings[tid]){
+    dcard.appendChild(el(`<p class="muted">✅ Desenho do boi enviado! Aguardando a outra agremiação.</p>`));
+    dcard.appendChild(el(`<img src="${room.oxDrawings[tid]}" style="max-width:300px;border-radius:10px;">`));
+  } else {
+    dcard.appendChild(el(`<p class="muted">O presidente <b>${esc(room.teams[tid].members.find(m=>m.id===t.presidentId)?.name||'')}</b> está desenhando...</p>`));
+  }
+  wrap.appendChild(dcard);
+
+  const chatCard = el(`<div class="card"><h2>Chat da agremiação</h2><div class="chatbox" id="chatbox"></div>
+    <div class="row"><input type="text" id="chatInput" placeholder="Sugira ideias para o boi..." style="flex:1"><button id="chatSend">Enviar</button></div></div>`);
+  const cb = chatCard.querySelector('#chatbox');
+  (room.chat[tid]||[]).forEach(m=>{ cb.appendChild(el(`<div class="chatline"><b>${esc(m.name)}:</b> ${esc(m.text)}</div>`)); });
+  cb.scrollTop = cb.scrollHeight;
+  chatCard.querySelector('#chatSend').onclick=()=>{
+    const inp = chatCard.querySelector('#chatInput'); const v = inp.value.trim();
+    if(v){ sendChat(tid, v); inp.value=''; }
+  };
+  wrap.appendChild(chatCard);
+  return wrap;
+}
+
+function renderCategories(){
+  const tid = myTeamId();
+  const t = room.teams[tid];
+  const wrap = el('<div class="card"></div>');
+  const already = room.categoryAssignments[tid][myId];
+  const chosenByTeam = Object.values(room.categoryAssignments[tid]);
+  wrap.appendChild(el(`<h2>Escolha sua categoria de desenho</h2><p class="muted">Cada player da agremiação escolhe um bloco de itens para desenhar. ${t.members.length===1? 'Como você é o único player, desenhará todos os itens.' : 'Categorias já escolhidas por colegas ficam bloqueadas.'}</p>`));
+  if(t.members.length===1 && !already){
+    // auto-handled server-side already through pickCategory single flow; force pick
+    pickCategory(tid, 'auto');
+  }
+  const row = el('<div class="row"></div>');
+  Object.entries(CATEGORY_LABELS).forEach(([key,label])=>{
+    const taken = chosenByTeam.includes(key);
+    const mine = already===key;
+    const items = ITEMS.filter(i=>i.cat===key).map(i=>i.num).join(', ');
+    const btn = el(`<button class="catbtn ${taken&&!mine?'taken':''}"><h3>${label}</h3><div class="muted">Itens: ${items}</div>${mine?'<div style="color:var(--gold);margin-top:6px;">✅ Sua escolha</div>':''}</button>`);
+    if(!taken && !already) btn.onclick=()=>pickCategory(tid, key);
+    row.appendChild(btn);
+  });
+  if(!already && t.members.length>1) wrap.appendChild(row);
+  else if(already) wrap.appendChild(el(`<p class="muted">Você escolheu: <b>${CATEGORY_LABELS[already]||'Todos os itens'}</b>. Aguardando os demais players (das duas agremiações) escolherem.</p>`));
+  return wrap;
+}
+
+function renderDrawItems(){
+  const tid = myTeamId();
+  const prog = room.playerProgress[myId];
+  if(!prog) return el('<div class="card">Aguardando atribuição de itens...</div>');
+  if(prog.idx >= prog.list.length){
+    return el(`<div class="card"><h2>Você concluiu seus desenhos!</h2><p class="muted">Aguardando os demais players terminarem os itens deles.</p></div>`);
+  }
+  const itemNum = prog.list[prog.idx];
+  const item = ITEMS.find(i=>i.num===itemNum);
+  const wrap = el('<div></div>');
+  wrap.appendChild(el(`<div class="card">
+    <div class="itemhead">
+      <h2>Item ${item.num} — ${esc(item.name)}</h2>
+      <span class="timer" id="timerDisplay">${fmtTime(itemTimeLeft)}</span>
+    </div>
+    <p class="muted">${esc(item.desc)}</p>
+  </div>`));
+  const excludeHex = [];
+  const rival = tid==='A'?'B':'A';
+  if(room.teams[rival].colorHex) excludeHex.push(room.teams[rival].colorHex);
+  const dcard = el('<div class="card"></div>');
+  const onDone = (dataUrl)=>{ clearInterval(itemTimerInterval); submitItemDrawing(itemNum, dataUrl); };
+  dcard.appendChild(renderCanvasTool(480,360, onDone, 'Concluído', excludeHex));
+  wrap.appendChild(dcard);
+  startItemTimer(()=>{
+    const canvas = document.getElementById('drawCanvas');
+    const dataUrl = canvas.toDataURL('image/jpeg',0.6);
+    onDone(dataUrl);
+  });
+  return wrap;
+}
+
+function renderCanvasTool(w,h,onSubmit,submitLabel,excludeHex){
+  excludeHex = excludeHex||[];
+  const wrap = el('<div></div>');
+  const toolbar = el(`<div class="toolbar">
+    <button class="tool-btn active" data-tool="brush">🖌️ Pincel</button>
+    <button class="tool-btn" data-tool="eraser">🧹 Borracha</button>
+    <button class="tool-btn" data-tool="rect">▭ Retângulo</button>
+    <button class="tool-btn" data-tool="circle">◯ Círculo</button>
+    <button class="tool-btn" data-tool="bucket">🪣 Pintar</button>
+    <input type="range" min="2" max="30" value="6" id="brushSize" style="width:100px;">
+  </div>`);
+  const palette = el('<div class="row" style="margin-bottom:10px;"></div>');
+  DRAW_PALETTE.forEach(hex=>{
+    if(excludeHex.includes(hex)) return;
+    const s = el(`<span class="colorswatch ${hex==='#000000'?'selected':''}" style="background:${hex}"></span>`);
+    s.onclick=()=>{ currentColor=hex; [...palette.children].forEach(c=>c.classList.remove('selected')); s.classList.add('selected'); };
+    palette.appendChild(s);
+  });
+  currentColor = DRAW_PALETTE.find(h=>!excludeHex.includes(h)) || '#000000';
+  currentTool='brush';
+  const canvas = el(`<canvas id="drawCanvas" width="${w}" height="${h}"></canvas>`);
+  const submitBtn = el(`<button style="margin-top:12px;">${submitLabel}</button>`);
+  submitBtn.onclick=()=>{ onSubmit(canvas.toDataURL('image/jpeg',0.6)); };
+
+  toolbar.querySelectorAll('.tool-btn').forEach(b=>{
+    b.onclick=()=>{ currentTool=b.dataset.tool; toolbar.querySelectorAll('.tool-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  });
+  toolbar.querySelector('#brushSize').oninput=(e)=>{ brushSize=Number(e.target.value); };
+
+  wrap.appendChild(toolbar); wrap.appendChild(palette); wrap.appendChild(canvas); wrap.appendChild(submitBtn);
+  setTimeout(()=>setupCanvas(canvas),0);
+  return wrap;
+}
+
+function renderFestival(){
+  const tid = myTeamId();
+  const wrap = el('<div class="card"></div>');
+  if(!room.festivalReady[tid]){
+    wrap.innerHTML = `<h2>Apresentar Festival</h2><p class="muted">Sua agremiação está pronta para apresentar os desenhos. Clique para revelar!</p>`;
+    const btn = el(`<button>Apresentar Festival</button>`);
+    btn.onclick=()=>markFestivalReady(tid);
+    wrap.appendChild(btn);
+    return wrap;
+  }
+  if(!room.festivalReady.A || !room.festivalReady.B){
+    wrap.innerHTML = `<h2>Aguardando...</h2><p class="muted">Esperando a outra agremiação clicar em "Apresentar Festival".</p>`;
+    return wrap;
+  }
+  // build slideshow list: team A items (1..18 excluding 15) then team B, including ox(10)
+  const order = [];
+  ['A','B'].forEach(team=>{
+    const nums = [10, ...ITEMS.map(i=>i.num)].sort((a,b)=>a-b);
+    nums.forEach(n=>{
+      const src = n===10 ? room.oxDrawings[team] : room.drawings[team][n];
+      if(src) order.push({team, num:n, name: n===10?ITEM10.name:ITEMS.find(i=>i.num===n).name, src});
+    });
+  });
+  if(!window.__festivalOrder) window.__festivalOrder = order;
+  const idxHolder = el(`<div></div>`);
+  function showSlide(i){
+    const s = order[i];
+    if(!s){
+      idxHolder.innerHTML = `<p class="muted">Fim da apresentação.</p>`;
+      const btn = el(`<button>Ver Apuração</button>`);
+      btn.onclick=()=>{ clearInterval(festivalTimer); runJudging(); };
+      idxHolder.appendChild(btn);
+      return;
+    }
+    idxHolder.innerHTML = `<div class="slideshow"><div class="phaseflag">Agremiação ${s.team} — ${room.teams[s.team].name}</div><h2>Item ${s.num} — ${esc(s.name)}</h2><img src="${s.src}"></div>`;
+  }
+  wrap.innerHTML = `<h2>Apresentação do Festival</h2>`;
+  wrap.appendChild(idxHolder);
+  showSlide(0);
+  clearInterval(festivalTimer);
+  let i=0;
+  festivalTimer = setInterval(()=>{
+    i++; showSlide(i);
+    if(i>=order.length) clearInterval(festivalTimer);
+  }, 15000);
+  return wrap;
+}
+
+function renderJudging(){
+  const wrap = el(`<div class="card" style="text-align:center;">
+    <h2>Ver Apuração</h2>
+    <p class="muted">Os jurados Hyldes Kamara, Lupita Celeste e Giane Malu estão avaliando os desenhos...</p>
+    <div class="spinner"></div>
+  </div>`);
+  if(!room.scoringInProgress && !room.scores) runJudging();
+  return wrap;
+}
+
+function renderResults(){
+  const wrap = el('<div></div>');
+  const totalA = teamGrandTotal('A'), totalB = teamGrandTotal('B');
+  const winner = totalA>totalB ? room.teams.A.name : totalB>totalA ? room.teams.B.name : 'Empate!';
+  const scoreTable = el('<div class="card"><h2>Notas por item</h2></div>');
+  const table = el(`<table><thead><tr><th>Item</th><th>Agremiação A</th><th>Agremiação B</th></tr></thead><tbody></tbody></table>`);
+  const tbody = table.querySelector('tbody');
+  const allJudged = [...ITEMS.map(i=>i.num), 15].sort((a,b)=>a-b);
+  allJudged.forEach(num=>{
+    const name = num===15? ITEM15.name : ITEMS.find(i=>i.num===num).name;
+    const a = computeItemTotal(room.scores.A[num]);
+    const b = computeItemTotal(room.scores.B[num]);
+    tbody.appendChild(el(`<tr><td>${num} — ${esc(name)}</td><td>${a.total}</td><td>${b.total}</td></tr>`));
+  });
+  scoreTable.appendChild(table);
+  wrap.appendChild(scoreTable);
+
+  wrap.appendChild(el(`<div class="card"><div class="winner">🏆 Campeã: ${esc(winner)}</div>
+    <table><tr><td>Total ${esc(room.teams.A.name)}</td><td><b>${totalA}</b></td></tr><tr><td>Total ${esc(room.teams.B.name)}</td><td><b>${totalB}</b></td></tr></table></div>`));
+
+  const justifCard = el(`<div class="card"></div>`);
+  const btn = el(`<button class="secondary">Revelar Justificativas</button>`);
+  const justifBody = el(`<div class="hidden" id="justifBody"></div>`);
+  btn.onclick=()=>{
+    justifBody.classList.toggle('hidden');
+    if(justifBody.innerHTML==='') justifBody.innerHTML = buildJustifHtml();
+  };
+  justifCard.appendChild(btn); justifCard.appendChild(justifBody);
+  wrap.appendChild(justifCard);
+
+  const dl = el(`<div class="card"><h2>Download dos desenhos</h2><div class="thumbgrid" id="thumbgrid"></div></div>`);
+  const grid = dl.querySelector('#thumbgrid');
+  ['A','B'].forEach(team=>{
+    if(room.oxDrawings[team]) grid.appendChild(makeThumb(team, 10, ITEM10.name, room.oxDrawings[team]));
+    ITEMS.forEach(item=>{
+      const src = room.drawings[team][item.num];
+      if(src) grid.appendChild(makeThumb(team, item.num, item.name, src));
+    });
+  });
+  wrap.appendChild(dl);
+  return wrap;
+}
+function makeThumb(team,num,name,src){
+  const t = el(`<div class="thumb"><img src="${src}"><div>${team} · Item ${num}<br>${esc(name)}</div></div>`);
+  const a = el(`<a href="${src}" download="agremiacao_${team}_item_${num}.jpg" style="text-decoration:none;"><button class="secondary" style="width:100%;margin-top:6px;padding:6px;font-size:11px;">Baixar</button></a>`);
+  t.appendChild(a);
+  return t;
+}
+function buildJustifHtml(){
+  let html='';
+  const allJudged = [...ITEMS.map(i=>i.num), 15].sort((a,b)=>a-b);
+  ['A','B'].forEach(team=>{
+    html += `<h3>${esc(room.teams[team].name)}</h3>`;
+    allJudged.forEach(num=>{
+      const name = num===15? ITEM15.name : ITEMS.find(i=>i.num===num).name;
+      const arr = room.scores[team][num]||[];
+      html += `<div class="justif"><b>Item ${num} — ${esc(name)}</b><br>`;
+      arr.forEach(s=>{ html += `<div><i>${esc(s.judge)}</i>: nota ${s.score} — ${esc(s.justificativa)}</div>`; });
+      html += `</div>`;
+    });
+  });
+  return html;
+}
+
+render();
+</script>
+</body>
+</html>

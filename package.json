@@ -1,0 +1,16 @@
+{
+  "name": "boiverso",
+  "version": "1.0.0",
+  "description": "BoiVerso — jogo multiplayer de festival de boi-bumbá, com jurados de IA.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}
