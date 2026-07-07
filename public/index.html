@@ -171,6 +171,7 @@ let pollTimer = null;
 let currentTool = 'brush';
 let currentColor = '#000000';
 let brushSize = 6;
+let brushOpacity = 1;
 let drawing = false;
 let lastPt = null;
 let itemTimerInterval = null;
@@ -221,10 +222,14 @@ async function createRoom(name){
     itemAssignments: {A:{}, B:{}}, // itemNum -> playerId
     playerProgress: {}, // playerId -> {list:[itemNums in order], idx:0}
     drawings: {A:{}, B:{}}, // itemNum -> dataURL
+    itemThemes: {A:{}, B:{}}, // itemNum -> tema escrito pelo player
     oxDrawings: {A:null, B:null},
+    oxThemes: {A:null, B:null},
     chat: {A:[], B:[]},
     scores: null,
     scoringInProgress:false,
+    scoringStartedAt:null,
+    scoringStatus:null,
     festivalReady: {A:false,B:false}
   };
   await saveRoom(roomCode, data);
@@ -276,9 +281,10 @@ async function startCategoryPhase(){
 function myTeamId(){ return room && room.players[myId] ? room.players[myId].teamId : null; }
 function isPresident(teamId){ return room.teams[teamId].presidentId === myId; }
 
-async function submitOxDrawing(teamId, dataUrl){
+async function submitOxDrawing(teamId, dataUrl, theme){
   const data = await loadRoom(roomCode);
   data.oxDrawings[teamId] = dataUrl;
+  data.oxThemes[teamId] = theme || '';
   data.phase = data.oxDrawings.A && data.oxDrawings.B ? 'categories' : data.phase;
   await saveRoom(roomCode, data); render();
 }
@@ -339,10 +345,11 @@ function buildItemAssignments(data, teamId){
   });
 }
 
-async function submitItemDrawing(itemNum, dataUrl){
+async function submitItemDrawing(itemNum, dataUrl, theme){
   const data = await loadRoom(roomCode);
   const t = myTeamId();
   data.drawings[t][itemNum] = dataUrl;
+  data.itemThemes[t][itemNum] = theme || '';
   const prog = data.playerProgress[myId];
   prog.idx += 1;
   // check if both teams fully done
@@ -359,58 +366,105 @@ async function submitItemDrawing(itemNum, dataUrl){
 async function markFestivalReady(teamId){
   const data = await loadRoom(roomCode);
   data.festivalReady[teamId]=true;
-  if(data.festivalReady.A && data.festivalReady.B) data.phase='judging';
   await saveRoom(roomCode, data); render();
 }
 
-/* ============ AI JUDGING ============ */
-async function runJudging(){
+async function beginJudging(){
   const data = await loadRoom(roomCode);
-  if(data.scoringInProgress || data.scores) { room=data; render(); return; }
+  if(data.phase !== 'results' && !data.scores){
+    data.phase = 'judging';
+    data.scoringStatus = 'Iniciando avaliação...';
+    await saveRoom(roomCode, data); render();
+  }
+  runJudging();
+}
+
+/* ============ AI JUDGING ============ */
+function fallbackJudgeScore(){
+  const score = Math.round((6 + Math.random()*3.5)*10)/10;
+  return {score, justificativa:'Nota gerada automaticamente (não foi possível consultar a IA neste momento).'};
+}
+const ALL_JUDGED_NUMS = [...ITEMS.map(i=>i.num), 15];
+
+async function runJudging(){
+  let data = await loadRoom(roomCode);
+  if(data.scores){ room=data; render(); return; }
+  const recentlyStarted = data.scoringInProgress && data.scoringStartedAt && (Date.now()-data.scoringStartedAt < 3*60*1000);
+  if(recentlyStarted){ room=data; render(); return; }
+
   data.scoringInProgress = true;
+  data.scoringStartedAt = Date.now();
+  data.scoringStatus = 'Iniciando avaliação...';
   await saveRoom(roomCode, data); render();
 
   const results = {A:{}, B:{}};
-  for(const teamId of ['A','B']){
-    for(const judge of JUDGES){
-      const content = [];
-      content.push({type:'text', text: judge.persona + "\n\nVocê vai avaliar os desenhos de fantasias/itens de uma agremiação de boi-bumbá (estilo Festival de Parintins). Para cada item, dê uma nota de 0 a 10 (pode usar casas decimais) e uma justificativa curta em português (1-2 frases). Responda APENAS com um JSON válido, um array de objetos no formato: [{\"item\":NUM, \"score\":NUM, \"justificativa\":\"...\"}], sem nenhum texto antes ou depois, sem markdown."});
-      ITEMS.forEach(item=>{
-        const d = data.drawings[teamId][item.num];
-        if(d){
-          content.push({type:'text', text: `Item ${item.num} — ${item.name}. Critério: ${item.desc}`});
-          content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data: d.split(',')[1]}});
+  try{
+    for(const teamId of ['A','B']){
+      for(const judge of JUDGES){
+        try{
+          const statusData = await loadRoom(roomCode);
+          statusData.scoringStatus = `Consultando ${judge.name} sobre a ${statusData.teams[teamId].name}...`;
+          await saveRoom(roomCode, statusData); render();
+        }catch(e){ /* status update não é crítico */ }
+
+        const content = [];
+        content.push({type:'text', text: judge.persona + "\n\nVocê vai avaliar os desenhos de fantasias/itens de uma agremiação de boi-bumbá (estilo Festival de Parintins). Para cada item, dê uma nota de 0 a 10 (pode usar casas decimais) e uma justificativa curta em português (1-2 frases). Responda APENAS com um JSON válido, um array de objetos no formato: [{\"item\":NUM, \"score\":NUM, \"justificativa\":\"...\"}], sem nenhum texto antes ou depois, sem markdown."});
+        ITEMS.forEach(item=>{
+          const d = data.drawings[teamId][item.num];
+          if(d){
+            const theme = data.itemThemes[teamId] && data.itemThemes[teamId][item.num];
+            content.push({type:'text', text: `Item ${item.num} — ${item.name}. Critério: ${item.desc}${theme? ` Tema definido pelo player: "${theme}".`:''}`});
+            content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data: d.split(',')[1]}});
+          }
+        });
+        content.push({type:'text', text:`Item 15 — ${ITEM15.name}. Critério: ${ITEM15.desc} Avalie o conjunto formado pelas três imagens de alegorias a seguir (itens 04, 14 e 16 já mostrados acima, considere-os em conjunto).`});
+        [4,14,16].forEach(n=>{
+          const d = data.drawings[teamId][n];
+          if(d) content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d.split(',')[1]}});
+        });
+
+        try{
+          const resp = await fetch(`${API_BASE}/api/judge`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({content})
+          });
+          const json = await resp.json();
+          let text = (json.content||[]).map(b=>b.text||'').join('');
+          text = text.replace(/```json|```/g,'').trim();
+          const parsed = JSON.parse(text);
+          parsed.forEach(entry=>{
+            if(!results[teamId][entry.item]) results[teamId][entry.item] = [];
+            results[teamId][entry.item].push({judge:judge.name, score:Number(entry.score), justificativa:entry.justificativa});
+          });
+        }catch(e){
+          console.error('Erro ao julgar', teamId, judge.name, e);
+          // Fallback: garante que o jogo nunca fique travado esperando a IA.
+          ALL_JUDGED_NUMS.forEach(num=>{
+            if(!results[teamId][num]) results[teamId][num] = [];
+            const fb = fallbackJudgeScore();
+            results[teamId][num].push({judge: judge.name, score: fb.score, justificativa: fb.justificativa});
+          });
         }
-      });
-      // Item 15 ensemble: items 4,14,16
-      content.push({type:'text', text:`Item 15 — ${ITEM15.name}. Critério: ${ITEM15.desc} Avalie o conjunto formado pelas três imagens de alegorias a seguir (itens 04, 14 e 16 já mostrados acima, considere-os em conjunto).`});
-      [4,14,16].forEach(n=>{
-        const d = data.drawings[teamId][n];
-        if(d) content.push({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d.split(',')[1]}});
-      });
-      try{
-        const resp = await fetch(`${API_BASE}/api/judge`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({content})
-        });
-        const json = await resp.json();
-        let text = (json.content||[]).map(b=>b.text||'').join('');
-        text = text.replace(/```json|```/g,'').trim();
-        const parsed = JSON.parse(text);
-        parsed.forEach(entry=>{
-          if(!results[teamId][entry.item]) results[teamId][entry.item] = [];
-          results[teamId][entry.item].push({judge:judge.name, score:Number(entry.score), justificativa:entry.justificativa});
-        });
-      }catch(e){
-        console.error('Erro ao julgar', teamId, judge.name, e);
       }
     }
+    // Segurança extra: qualquer item que não tenha recebido as 3 notas é completado.
+    ['A','B'].forEach(teamId=>{
+      ALL_JUDGED_NUMS.forEach(num=>{
+        if(!results[teamId][num]) results[teamId][num] = [];
+        while(results[teamId][num].length < 3){
+          const fb = fallbackJudgeScore();
+          results[teamId][num].push({judge:'Avaliação automática', score:fb.score, justificativa:fb.justificativa});
+        }
+      });
+    });
+  } finally {
+    const fresh = await loadRoom(roomCode);
+    fresh.scores = results;
+    fresh.scoringInProgress = false;
+    fresh.scoringStatus = null;
+    fresh.phase = 'results';
+    await saveRoom(roomCode, fresh); render();
   }
-  const fresh = await loadRoom(roomCode);
-  fresh.scores = results;
-  fresh.scoringInProgress = false;
-  fresh.phase = 'results';
-  await saveRoom(roomCode, fresh); render();
 }
 
 function computeItemTotal(scoresArr){
@@ -442,14 +496,18 @@ function setupCanvas(canvas){
     const cy = (e.touches? e.touches[0].clientY : e.clientY) - rect.top;
     return {x: cx*(canvas.width/rect.width), y: cy*(canvas.height/rect.height)};
   }
-  function floodFill(x,y,fillColor){
+  function floodFill(x,y,fillColor,alpha){
     x=Math.floor(x); y=Math.floor(y);
     const img = ctx.getImageData(0,0,canvas.width,canvas.height);
     const d = img.data;
     const idx = (y*canvas.width+x)*4;
     const target = [d[idx],d[idx+1],d[idx+2],d[idx+3]];
     const fr = parseInt(fillColor.slice(1,3),16), fg=parseInt(fillColor.slice(3,5),16), fb=parseInt(fillColor.slice(5,7),16);
-    if(target[0]===fr && target[1]===fg && target[2]===fb) return;
+    const na = alpha==null ? 1 : alpha;
+    const nr = Math.round(fr*na + target[0]*(1-na));
+    const ng = Math.round(fg*na + target[1]*(1-na));
+    const nb = Math.round(fb*na + target[2]*(1-na));
+    if(target[0]===nr && target[1]===ng && target[2]===nb) return;
     const stack=[[x,y]]; let guard=0;
     function match(i){ return Math.abs(d[i]-target[0])<20 && Math.abs(d[i+1]-target[1])<20 && Math.abs(d[i+2]-target[2])<20; }
     while(stack.length && guard<400000){
@@ -458,7 +516,7 @@ function setupCanvas(canvas){
       if(cx<0||cy<0||cx>=canvas.width||cy>=canvas.height) continue;
       const i=(cy*canvas.width+cx)*4;
       if(!match(i)) continue;
-      d[i]=fr; d[i+1]=fg; d[i+2]=fb; d[i+3]=255;
+      d[i]=nr; d[i+1]=ng; d[i+2]=nb; d[i+3]=255;
       stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
     }
     ctx.putImageData(img,0,0);
@@ -466,7 +524,7 @@ function setupCanvas(canvas){
   function start(e){
     e.preventDefault(); drawing=true;
     const p = getPos(e);
-    if(currentTool==='bucket'){ floodFill(p.x,p.y,currentColor); drawing=false; return; }
+    if(currentTool==='bucket'){ floodFill(p.x,p.y,currentColor,brushOpacity); drawing=false; return; }
     if(currentTool==='rect' || currentTool==='circle'){
       shapeStart=p; snapshot = ctx.getImageData(0,0,canvas.width,canvas.height); return;
     }
@@ -478,16 +536,20 @@ function setupCanvas(canvas){
     const p = getPos(e);
     if(currentTool==='rect' || currentTool==='circle'){
       ctx.putImageData(snapshot,0,0);
+      ctx.globalAlpha = brushOpacity;
       ctx.strokeStyle=currentColor; ctx.lineWidth=brushSize;
       ctx.beginPath();
       if(currentTool==='rect'){ ctx.rect(shapeStart.x, shapeStart.y, p.x-shapeStart.x, p.y-shapeStart.y); }
       else{ const r=Math.hypot(p.x-shapeStart.x,p.y-shapeStart.y); ctx.arc(shapeStart.x,shapeStart.y,r,0,Math.PI*2); }
       ctx.stroke();
+      ctx.globalAlpha = 1;
       return;
     }
+    ctx.globalAlpha = currentTool==='eraser' ? 1 : brushOpacity;
     ctx.strokeStyle = currentTool==='eraser' ? '#FFFFFF' : currentColor;
     ctx.lineWidth = currentTool==='eraser' ? brushSize*3 : brushSize;
     ctx.lineTo(p.x,p.y); ctx.stroke();
+    ctx.globalAlpha = 1;
     lastPt=p;
   }
   function end(e){ drawing=false; shapeStart=null; }
@@ -645,7 +707,7 @@ function renderDrawOx(){
 
   const dcard = el('<div class="card"></div>');
   if(amPresident && !room.oxDrawings[tid]){
-    dcard.appendChild(renderCanvasTool(480,360,(dataUrl)=>submitOxDrawing(tid, dataUrl), 'Enviar desenho do Boi'));
+    dcard.appendChild(renderCanvasTool(480,360,(dataUrl,theme)=>submitOxDrawing(tid, dataUrl, theme), 'Enviar desenho do Boi', [], room.oxThemes[tid]||''));
   } else if(room.oxDrawings[tid]){
     dcard.appendChild(el(`<p class="muted">✅ Desenho do boi enviado! Aguardando a outra agremiação.</p>`));
     dcard.appendChild(el(`<img src="${room.oxDrawings[tid]}" style="max-width:300px;border-radius:10px;">`));
@@ -713,47 +775,69 @@ function renderDrawItems(){
   const rival = tid==='A'?'B':'A';
   if(room.teams[rival].colorHex) excludeHex.push(room.teams[rival].colorHex);
   const dcard = el('<div class="card"></div>');
-  const onDone = (dataUrl)=>{ clearInterval(itemTimerInterval); submitItemDrawing(itemNum, dataUrl); };
-  dcard.appendChild(renderCanvasTool(480,360, onDone, 'Concluído', excludeHex));
+  const onDone = (dataUrl, theme)=>{ clearInterval(itemTimerInterval); submitItemDrawing(itemNum, dataUrl, theme); };
+  const savedTheme = (room.itemThemes[tid] && room.itemThemes[tid][itemNum]) || '';
+  dcard.appendChild(renderCanvasTool(480,360, onDone, 'Concluído', excludeHex, savedTheme));
   wrap.appendChild(dcard);
   startItemTimer(()=>{
     const canvas = document.getElementById('drawCanvas');
+    const themeInput = document.getElementById('themeInput');
     const dataUrl = canvas.toDataURL('image/jpeg',0.6);
-    onDone(dataUrl);
+    onDone(dataUrl, themeInput ? themeInput.value.trim() : '');
   });
   return wrap;
 }
 
-function renderCanvasTool(w,h,onSubmit,submitLabel,excludeHex){
+function renderCanvasTool(w,h,onSubmit,submitLabel,excludeHex,initialTheme){
   excludeHex = excludeHex||[];
   const wrap = el('<div></div>');
+  const themeBox = el(`<div style="margin-bottom:12px;">
+    <label>Tema deste desenho</label>
+    <input type="text" id="themeInput" placeholder="Ex: uma dançarina com cocar dourado sob a lua cheia..." value="${esc(initialTheme||'')}">
+  </div>`);
   const toolbar = el(`<div class="toolbar">
     <button class="tool-btn active" data-tool="brush">🖌️ Pincel</button>
     <button class="tool-btn" data-tool="eraser">🧹 Borracha</button>
     <button class="tool-btn" data-tool="rect">▭ Retângulo</button>
     <button class="tool-btn" data-tool="circle">◯ Círculo</button>
     <button class="tool-btn" data-tool="bucket">🪣 Pintar</button>
-    <input type="range" min="2" max="30" value="6" id="brushSize" style="width:100px;">
+    <span class="muted" style="margin-left:4px;">Espessura</span>
+    <input type="range" min="2" max="30" value="6" id="brushSize" style="width:90px;">
+    <span class="muted">Transparência</span>
+    <input type="range" min="10" max="100" value="100" id="brushOpacity" style="width:90px;">
+    <input type="color" id="colorPicker" value="#000000" title="Escolher cor personalizada" style="width:38px;height:32px;border:none;border-radius:8px;padding:0;background:none;cursor:pointer;">
   </div>`);
   const palette = el('<div class="row" style="margin-bottom:10px;"></div>');
   DRAW_PALETTE.forEach(hex=>{
     if(excludeHex.includes(hex)) return;
     const s = el(`<span class="colorswatch ${hex==='#000000'?'selected':''}" style="background:${hex}"></span>`);
-    s.onclick=()=>{ currentColor=hex; [...palette.children].forEach(c=>c.classList.remove('selected')); s.classList.add('selected'); };
+    s.onclick=()=>{
+      currentColor=hex;
+      toolbar.querySelector('#colorPicker').value = hex.length===7 ? hex : '#000000';
+      [...palette.children].forEach(c=>c.classList.remove('selected')); s.classList.add('selected');
+    };
     palette.appendChild(s);
   });
   currentColor = DRAW_PALETTE.find(h=>!excludeHex.includes(h)) || '#000000';
-  currentTool='brush';
+  currentTool='brush'; brushOpacity=1;
   const canvas = el(`<canvas id="drawCanvas" width="${w}" height="${h}"></canvas>`);
   const submitBtn = el(`<button style="margin-top:12px;">${submitLabel}</button>`);
-  submitBtn.onclick=()=>{ onSubmit(canvas.toDataURL('image/jpeg',0.6)); };
+  submitBtn.onclick=()=>{
+    const themeVal = wrap.querySelector('#themeInput').value.trim();
+    onSubmit(canvas.toDataURL('image/jpeg',0.6), themeVal);
+  };
 
   toolbar.querySelectorAll('.tool-btn').forEach(b=>{
     b.onclick=()=>{ currentTool=b.dataset.tool; toolbar.querySelectorAll('.tool-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
   });
   toolbar.querySelector('#brushSize').oninput=(e)=>{ brushSize=Number(e.target.value); };
+  toolbar.querySelector('#brushOpacity').oninput=(e)=>{ brushOpacity=Number(e.target.value)/100; };
+  toolbar.querySelector('#colorPicker').oninput=(e)=>{
+    currentColor = e.target.value;
+    [...palette.children].forEach(c=>c.classList.remove('selected'));
+  };
 
-  wrap.appendChild(toolbar); wrap.appendChild(palette); wrap.appendChild(canvas); wrap.appendChild(submitBtn);
+  wrap.appendChild(themeBox); wrap.appendChild(toolbar); wrap.appendChild(palette); wrap.appendChild(canvas); wrap.appendChild(submitBtn);
   setTimeout(()=>setupCanvas(canvas),0);
   return wrap;
 }
@@ -788,7 +872,7 @@ function renderFestival(){
     if(!s){
       idxHolder.innerHTML = `<p class="muted">Fim da apresentação.</p>`;
       const btn = el(`<button>Ver Apuração</button>`);
-      btn.onclick=()=>{ clearInterval(festivalTimer); runJudging(); };
+      btn.onclick=()=>{ clearInterval(festivalTimer); beginJudging(); };
       idxHolder.appendChild(btn);
       return;
     }
@@ -809,10 +893,10 @@ function renderFestival(){
 function renderJudging(){
   const wrap = el(`<div class="card" style="text-align:center;">
     <h2>Ver Apuração</h2>
-    <p class="muted">Os jurados Hyldes Kamara, Lupita Celeste e Giane Malu estão avaliando os desenhos...</p>
+    <p class="muted">${esc(room.scoringStatus || 'Os jurados Hyldes Kamara, Lupita Celeste e Giane Malu estão avaliando os desenhos...')}</p>
     <div class="spinner"></div>
   </div>`);
-  if(!room.scoringInProgress && !room.scores) runJudging();
+  if(!room.scores) runJudging();
   return wrap;
 }
 
